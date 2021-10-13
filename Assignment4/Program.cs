@@ -11,18 +11,19 @@ namespace Assignment4
 {
     class Program
     {
+        //public static KanbanContext _context {private set; get;}
+
         static void Main(string[] args)
         {
-            //var connectionString = "Server=localhost;Database=Kanban;User Id=sa;Password=$connectionString = "Server=localhost;Database=$database;User Id=sa;Password=$password"";
+            //var connectionString = "Server=localhost;Database=Kanban;User Id=sa;Password=$connectionString = Server=localhost;Database=Kanban;User Id=sa;Password=640042d4-f367-45a2-b412-84117a5e1d88";
             //docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$password" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2019-latest
             var configuration = LoadConfiguration();
-            var connectionString = configuration.GetConnectionString("Assignment4");
-            
-
+            var connectionString = configuration.GetConnectionString("Kanban");
             var optionsBuilder = new DbContextOptionsBuilder<KanbanContext>().UseSqlServer(connectionString);
             using var context = new KanbanContext(optionsBuilder.Options);
-            
-            //dotnet user-secrets set "ConnectionStrings:Assignment4" "$connectionString"
+            KanbanContextFactory.Seed(context);
+            //_context = context;
+                        
         }
 
         static IConfiguration LoadConfiguration()
