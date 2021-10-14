@@ -1,10 +1,8 @@
 using Assignment4.Core;
-using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
 
 namespace Assignment4.Entities
 {
