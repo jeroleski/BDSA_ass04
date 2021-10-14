@@ -9,13 +9,13 @@ using Xunit;
 
 namespace Assignment4.Entities.Tests
 {
-    public class UserRepositoryTests : IDisposable
-    {
+    public class UserRepositoryTests
+    { /*
         private readonly KanbanContext _context;
         private readonly UserRepository _repo;
-
+        
         public UserRepositoryTests()
-        {
+        { 
             /*var connection = new SqliteConnection("Filename=:memory:");
             connection.Open();
             var builder = new DbContextOptionsBuilder<ComicsContext>();
@@ -26,7 +26,7 @@ namespace Assignment4.Entities.Tests
             context.SaveChanges();
 
             _context = context;
-            _repo = new UserRepository(_context);*/
+            _repo = new UserRepository(_context);
 
 
 
@@ -84,6 +84,8 @@ namespace Assignment4.Entities.Tests
         public void Dispose()
         {
             _context.Dispose();
-        }
-    }
+        } 
+        */
+        
+    } 
 }

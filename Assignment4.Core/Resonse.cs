@@ -5,6 +5,7 @@ namespace Assignment4.Core
         Created,
         Updated,
         Deleted,
+        Found,
         NotFound,
         BadRequest,
         Conflict

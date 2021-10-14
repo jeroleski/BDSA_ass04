@@ -19,33 +19,55 @@ namespace Assignment4.Entities
 
         public (Response Response, int TagId) Create(TagCreateDTO tag)
         {            
-            var entity = new Tag { 
-                Name = tag.Name
-            };
-            _context.Tags.Add(entity);
-
-            _context.SaveChanges();
-
-            return new (Response.Created, entity.Id);
+            var entity = new Tag { Name = tag.Name };
+            var IdChecker = from Item in _context.Tags
+                            where Item.Name == tag.Name
+                            select Item.Id;
+            var check = IdChecker.FirstOrDefault();
+            if (check == 0) {
+                _context.Tags.Add(entity);
+                _context.SaveChanges();
+                return(Response.Created, entity.Id);
+            } 
+            return (Response.Conflict, check);
         }
+
         public IReadOnlyCollection<TagDTO> ReadAll() 
         {
-            throw new System.NotImplementedException();
+            return _context.Tags.Select(t => new TagDTO(t.Id, t.Name)).ToList().AsReadOnly();
         }
         public TagDTO Read(int tagId) 
         {
-            throw new System.NotImplementedException();
+            var tagById = from t in _context.Tags
+                          where t.Id == tagId
+                          select new TagDTO(t.Id, t.Name);
+            return tagById.FirstOrDefault<TagDTO>();
         }
         public Response Update(TagUpdateDTO tag)
         {
-            throw new System.NotImplementedException();
+            var entity = _context.Tags.Find(tag.Id);
+            if (entity == null) return Response.NotFound;
 
+            entity.Name = tag.Name;
+            entity.Id = tag.Id;
+            _context.SaveChanges();
+
+            return Response.Updated;
         }
         public Response Delete(int tagId, bool force = false)
         {
-            throw new System.NotImplementedException();
+            var entity = _context.Tags.Find(tagId);
+            if (entity == null) return Response.NotFound;
+
+            var Assigned = _context.Tasks.Any(task => task.Tags.Select(tag => tag.Id).Contains(tagId));
+            if (Assigned == true && !force) {
+                return Response.Conflict;
+            } else {
+                _context.Tags.Remove(entity);
+                _context.SaveChanges();
+
+                return Response.Deleted;
+            }
         }
-
-
     }
 }

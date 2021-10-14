@@ -18,7 +18,7 @@ namespace Assignment4
             //var connectionString = "Server=localhost;Database=Kanban;User Id=sa;Password=$connectionString = Server=localhost;Database=Kanban;User Id=sa;Password=640042d4-f367-45a2-b412-84117a5e1d88";
             //docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$password" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2019-latest
             var configuration = LoadConfiguration();
-            var connectionString = configuration.GetConnectionString("Kanban");
+            var connectionString = configuration.GetConnectionString("master");
             var optionsBuilder = new DbContextOptionsBuilder<KanbanContext>().UseSqlServer(connectionString);
             using var context = new KanbanContext(optionsBuilder.Options);
             KanbanContextFactory.Seed(context);

@@ -1,134 +1,120 @@
-using Assignment4.Core;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using System.Linq;
+using Assignment4.Core;
 
 
 namespace Assignment4.Entities
 {
     public class TaskRepository : ITaskRepository
     {
-        private readonly SqlConnection _connection;
-
-
-        public TaskRepository(SqlConnection connection)
+        public KanbanContext _context {private set; get;}
+        public TaskRepository(KanbanContext context)
         {
-            _connection = connection;
+            _context = context;
         }
 
         public (Response Response, int TaskId) Create(TaskCreateDTO task) {
-            
-            /* var cmdText = @"INSERT Tasks (Title, Description, AssignedToId, State)
-                            VALUES (@Title, @Description, @AssignedToId, @State)
-                            SELECT SCOPE_IDENTITY()";
-            
-            using var command = new SqlCommand(cmdText, _connection);
 
-            command.Parameters.AddWithValue("@Title", task.Title);
-            command.Parameters.AddWithValue("@Description", task.Description);
-            command.Parameters.AddWithValue("@AssignedToId", task.AssignedToId);
-            command.Parameters.AddWithValue("@State", task.State);
+            if (_context.Users.Find(task.AssignedToId) == null) {
+                return (Response.BadRequest, -1);
+            } else {
+                try {
+                    var entity = new Task {
+                        Title = task.Title,
+                        AssignedTo = _context.Users.Find(task.AssignedToId),
+                        Description = task.Description,
+                        State = State.New,
+                        Tags = task.Tags.Select(t => new Tag(){Name = t}).ToList(),
+                        Created = DateTime.Now,
+                        StatusUpdated = DateTime.Now
+                    };
+                            
+                    _context.Tasks.Add(entity);
+                    _context.SaveChanges();
 
-            OpenConnection();
-
-            var id = command.ExecuteScalar();
-
-            CloseConnection();
-
-            return (int) id; */
-            throw new System.NotImplementedException();
+                    return (Response.Created, entity.Id);
+                } catch (Exception e) {
+                    return (Response.Conflict,_context.Users.Find(task.AssignedToId).Id);
+                }
+            }
         }
 
         public IReadOnlyCollection<TaskDTO> ReadAll()
         {
-            /* var cmdText = @"SELECT c.Id, c.Title, c.Description, c.AssignedToId, c.State
-                            FROM Tasks";
-
-            using var command = new SqlCommand(cmdText, _connection);
-
-            OpenConnection();
-
-            using var reader = command.ExecuteReader();
-
-            var list = new List<TaskDTO>();
-            while (reader.Read())
-            {
-                list.Add(new TaskDTO
-                {
-                    Id = reader.GetInt32("Id"),
-                    Title = reader.GetString("Title"),
-                    Description = reader.GetString("Description"),
-                    AssignedToId = reader.GetInt32("AssignedToId"),
-                    State = Enum.Parse<State>(reader.GetString("State"))
-                });
-            }
-            
-            CloseConnection();;
-
-            return list; */
-            throw new System.NotImplementedException();
+            return _context.Tasks.Select(task => new TaskDTO(
+                task.Id,
+                task.Title,
+                task.AssignedTo.Name,
+                task.Tags.Select(tags => tags.Name).ToList(),
+                task.State)).ToList().AsReadOnly();
         }
 
         public IReadOnlyCollection<TaskDTO> ReadAllRemoved() {
-            throw new System.NotImplementedException();
+            return ReadAllByState(State.Removed);
         }
 
-        public IReadOnlyCollection<TaskDTO> ReadAllByTag(string tag) {
-            throw new System.NotImplementedException();
+        public IReadOnlyCollection<TaskDTO> ReadAllByTag(string tag) {        
+            return ReadAll().Where(t => t.Tags.Contains(tag)).ToList().AsReadOnly();
+
         }
         public IReadOnlyCollection<TaskDTO> ReadAllByUser(int userId) {
-            throw new System.NotImplementedException();
+            return ReadAll().Where(t => t.Id == userId).ToList().AsReadOnly();
         }
 
         public IReadOnlyCollection<TaskDTO> ReadAllByState(State state) {
-            throw new System.NotImplementedException();
+            return ReadAll().Where(t => t.State == state).ToList().AsReadOnly();
         }
 
         public TaskDetailsDTO Read(int TaskId) {
-            throw new System.NotImplementedException();
+            var tasks =  from t in _context.Tasks
+                        where t.Id == TaskId
+                        select new TaskDetailsDTO(
+                            t.Id,
+                            t.Title,
+                            t.Description,
+                            t.Created,
+                            t.AssignedTo.Name,
+                            t.Tags.Select(tags => tags.Name).ToList().AsReadOnly(),
+                            t.State,
+                            t.StatusUpdated
+                        );
+            return tasks.FirstOrDefault();
         }
 
         public Response Update(TaskUpdateDTO task) {
-            throw new System.NotImplementedException();
+            
+            var entity = _context.Tasks.Find(task.Id);
+            if (entity == null) return Response.NotFound;
+
+            
+            entity.Title = task.Title;
+            entity.AssignedTo = _context.Users.Find(task.AssignedToId);
+            entity.Description = task.Description;
+            entity.State = task.State;
+            entity.Tags = task.Tags.Select(t => new Tag() {
+                Name = t}).ToList();
+            entity.StatusUpdated = DateTime.Now;
+
+            _context.SaveChanges();
+            return Response.Updated;
+
         }
         
         public Response Delete(int TaskId)
         {
-            /* var cmdText = @"DELETE Tasks WHERE Id = @Id";
+            var entity = _context.Tasks.Find(TaskId);
+            if (entity == null) return Response.NotFound;
 
-            using var command = new SqlCommand(cmdText, _connection);
-
-            command.Parameters.AddWithValue("@Id", taskId);
-
-            OpenConnection();
-
-            command.ExecuteNonQuery();
-
-            CloseConnection(); */
-            throw new System.NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            _connection.Dispose();
-        }
-
-        private void OpenConnection()
-        {
-            if (_connection.State == ConnectionState.Closed)
-            {
-                _connection.Open();
+            if (entity.State == State.New || entity.State == State.Active) {
+                entity.State = State.Removed;
+                _context.Tasks.Remove(entity);
+                _context.SaveChanges();
+                return Response.Deleted;
+            } else {
+                return Response.Conflict;
             }
         }
-
-        private void CloseConnection()
-        {
-            if (_connection.State == ConnectionState.Open)
-            {
-                _connection.Close();
-            }
-        }
-
     }
 }
