@@ -35,7 +35,7 @@ namespace Assignment4.Entities
                     _context.SaveChanges();
 
                     return (Response.Created, entity.Id);
-                } catch (Exception e) {
+                } catch (Exception) {
                     return (Response.Conflict,_context.Users.Find(task.AssignedToId).Id);
                 }
             }
